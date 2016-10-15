@@ -58,18 +58,135 @@ void output(int unique_words, int max_freq, int num_words_w_max_freq, char* out)
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-// ADD CUSTOM FUNCTIONS AND OTHER GLOBAL VARIABLES AS NEEDED
+/*
+* C Implementaion of Find Most-Frequently Occuring Word.
+* Comments provided to explain functions and general logic flow
+* 
+* By Aw Young Qingzhuo s1546138
+*/
 
-void process_input(char* inp) {
-    // Populate following global variables
-    // num_unique_words
-    // max_frequency,
-    // num_words_with_max_frequency
-    // word
-    
-    // You may define more local variables here
-    // and call custom functions from here
+/*
+* Function taken verbatim from find_word.c sample code
+*/
+int is_delimiting_char(char ch) {
+    if ( ch == ' ') {
+        return 1;
+    } else if ( ch == ',') {
+        return 1;
+    } else if ( ch == '.') {
+        return 1;
+    } else if ( ch == '!') {
+        return 1;
+    } else if ( ch == '?') {
+        return 1;
+    } else if ( ch == '_') {
+        return 1;
+    } else if ( ch == '-') {
+        return 1;
+    } else if ( ch == '(') {
+        return 1;
+    } else if ( ch == ')') {
+        return 1;
+    } else if ( ch == '\n') { // Terminate the word if newline character found
+        return 1;
+    } else if ( ch == '\0') { // Terminate the word if null character found
+        return 1;
+    } else {
+        return 0;
+    }
 }
+
+/*
+* Checks 2 words in char array for similarity.
+* returns 0 if same, non-zero otherwise. does NOT indicate order of words.
+* Modified implementation of strcmp, stops at any delimiter instead of \0
+* Takes in 2 args which are pointers to start of words in string.
+*/
+int wordcmp(const char* s1, const char* s2)
+{
+    while(!is_delimiting_char(*s1) && (*s1==*s2))
+        s1++,s2++;
+    if (is_delimiting_char(*s1) && is_delimiting_char(*s2))
+        return 0;
+    else 
+        return 1;
+}
+
+/*
+* Copies first delimiter delimited word from source into destination
+* Destination is null terminated.
+*/
+char * wordcpy(char * destination, char * source) {
+    int i = 0;
+    while (!is_delimiting_char(*source)) {
+        destination[i++] = *source++;
+    }
+    destination[i] = '\0';
+    return destination;
+}
+
+/*
+* Define our struct for storing word and occurance count
+*/
+typedef struct Word {
+    char *word; // Pointer to start of word
+    int count;  // Count of occurances
+} Word;
+
+/*
+* Process input string to find:
+* - num_unique_words
+* - max_frequency
+* - num_words_with_max_frequency
+* - most common word
+* More efficient implementation than naive implementation in find_word.c
+*/
+void process_input(char* inp) {
+    // There can be maximum MAX_CHARS/2 words, when all words are 1 char long
+    Word unique[MAX_CHARS/2];
+    char *cur_char = inp;  // Pointer to current char we are processing
+    int parsed = 0;        // Boolean var for if current word is already parsed
+    while (*cur_char != '\0') {
+        if (parsed || is_delimiting_char(*cur_char)) {
+            // Skip to next unparsed word
+            if (is_delimiting_char(*cur_char)) {
+                parsed = 0;
+            }
+            cur_char++;
+        } else {
+            int is_unique = 1;
+            int i;
+            // Check if word is repeated, if so increment counter for that word
+            for (i = 0; i < num_unique_words; i++) {
+                if (wordcmp(cur_char, unique[i].word) == 0) {
+                    unique[i].count++;
+                    is_unique = 0;
+                    break;
+                }
+            }
+            // If word is encountered first time, add it to the list of uniques
+            if (is_unique) {
+                unique[num_unique_words].word = cur_char;
+                unique[num_unique_words].count = 1;
+                num_unique_words++;
+            }
+            cur_char++;
+            parsed = 1;  // Indicate that current word is parsed
+        }
+    }
+    int i;
+    // Iterate through list of words to find max and count
+    for (i = 0; i < num_unique_words; i++) {
+        if (unique[i].count > max_frequency) {
+            max_frequency = unique[i].count;
+            wordcpy(word, unique[i].word);
+            num_words_with_max_frequency = 1;
+        } else if (unique[i].count == max_frequency) {
+            num_words_with_max_frequency++;
+        }
+    }
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -78,7 +195,6 @@ void process_input(char* inp) {
 ///////////////////////////////////////////////////////////////////////////////
 
 int main() {
-
     while(1) {
 
         num_unique_words = 0;
