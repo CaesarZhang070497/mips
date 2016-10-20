@@ -14,8 +14,6 @@
 // C Header files
 #include <stdio.h>
 
-#include <stdio.h>
-
 void read_string(char* s, int size) { fgets(s, size, stdin); }
 
 void print_char(char c)    { printf("%c", c); }   
@@ -35,9 +33,9 @@ int num_unique_words = 0;
 int max_frequency = -1;
 int num_words_with_max_frequency = 0;
 
-int read_input(char* inp) {
+void read_input(char* inp) {
     print_string("\ninput: ");
-    read_string(input_sentence, MAX_CHARS);
+    read_string(inp, MAX_CHARS);
 }
 
 void output(int unique_words, int max_freq, int num_words_w_max_freq, char* out) {
@@ -102,8 +100,7 @@ int is_delimiting_char(char ch) {
 * Modified implementation of strcmp, stops at any delimiter instead of \0
 * Takes in 2 args which are pointers to start of words in string.
 */
-int wordcmp(const char* s1, const char* s2)
-{
+int wordcmp(const char* s1, const char* s2) {
     while(!is_delimiting_char(*s1) && (*s1==*s2))
         s1++,s2++;
     if (is_delimiting_char(*s1) && is_delimiting_char(*s2))
@@ -142,6 +139,7 @@ typedef struct Word {
 * More efficient implementation than naive implementation in find_word.c
 */
 void process_input(char* inp) {
+    int i; // for c90 compatibility (ironically this comment isn't compliant)
     // There can be maximum MAX_CHARS/2 words, when all words are 1 char long
     Word unique[MAX_CHARS/2];
     char *cur_char = inp;  // Pointer to current char we are processing
@@ -155,7 +153,6 @@ void process_input(char* inp) {
             cur_char++;
         } else {
             int is_unique = 1;
-            int i;
             // Check if word is repeated, if so increment counter for that word
             for (i = 0; i < num_unique_words; i++) {
                 if (wordcmp(cur_char, unique[i].word) == 0) {
@@ -174,7 +171,6 @@ void process_input(char* inp) {
             parsed = 1;  // Indicate that current word is parsed
         }
     }
-    int i;
     // Iterate through list of words to find max and count
     for (i = 0; i < num_unique_words; i++) {
         if (unique[i].count > max_frequency) {
