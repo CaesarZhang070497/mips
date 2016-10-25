@@ -25,11 +25,11 @@ input_str:      .asciiz "\ninput: "
 output_str:     .asciiz "output:\n"
 newline:        .asciiz "\n"
        # Other constants and allocated space for strings                      |
-maxchars:       .word 1001     # #define MAX_CHARS 1001                       |
+maxchars:       .word 1001      # #define MAX_CHARS 1001                      |
 input_sentence: .space 1001
 word:           .space 51
-input_index:    .word 1
-end_of_sentence:.word 1
+input_index:    .word 1         # dummy values
+end_of_sentence:.word 1         # will be reinitialized
         .text
         .globl main
 main:                           # main reordered so always start at main      | int main() {

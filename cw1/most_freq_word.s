@@ -34,8 +34,8 @@ input_sentence: .space 1001
 word:           .space 51
 unique:         .space 1000     # mapping of word to count. sizeof = 8 bytes
 num_unique_words:
-                .word 1
-max_frequency:  .word 1
+                .word 1         # dummy values
+max_frequency:  .word 1         # will be re-initialized
 num_words_with_max_frequency: 
                 .word 1
         .text
