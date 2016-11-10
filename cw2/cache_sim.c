@@ -115,9 +115,111 @@ uint32_t num_blocks = 0;
 result_t result;
 
 /* Add more global variables and/or functions as needed */
+/* rudimentary boolean wrapper */
+typedef enum {
+    false, true = !false
+}
+bool;
+typedef struct Node {
+    int val;
+    struct Node *prev;
+    struct Node *next;
+} Node;
 
-int main(int argc, char** argv)
-{
+Node *createNode(int val);
+
+typedef struct Cache {
+    Node *head;
+    Node *tail;
+    int filledBlocks;
+    int maxBlocks;
+
+    bool (*access)(struct Cache *, int);
+} Cache;
+
+Cache *createCache(int maxBlocks, cache_replacement_t replacement_type);
+
+bool accessFIFO(Cache *self, int tag) {
+    bool hit = false;
+    Node *head;
+    if (self->head != NULL) {
+        head = self->head;
+        while (!(hit = (head->val == tag)))
+            if (head->next != NULL)
+                head = head->next;
+            else break;
+    }
+    if (hit) return true;
+    else {
+        Node *node = createNode(tag);
+        if (self->head != NULL) {
+            node->next = self->head;
+            self->head->prev = node;
+        }
+        self->head = node;
+        if (self->filledBlocks >= self->maxBlocks) {
+            Node *prev = self->tail->prev;
+            prev->next = NULL;
+            free(self->tail);
+            self->tail = prev;
+        } else if (self->filledBlocks == 0) {
+            self->tail = node;
+            self->filledBlocks++;
+        } else {
+            self->filledBlocks++;
+        }
+    }
+    return false;
+}
+
+bool accessLRU(Cache *self, int tag) {
+
+}
+
+Node *createNode(int val) {
+    Node *node = malloc(sizeof(Node));
+    node->val = val;
+    node->prev = NULL;
+    node->next = NULL;
+    return node;
+}
+
+Cache *createCache(int maxBlocks, cache_replacement_t replacement_type) {
+    Cache *cache = malloc(sizeof(Cache));
+    cache->filledBlocks = 0;
+    cache->maxBlocks = maxBlocks;
+    cache->head = NULL;
+    cache->tail = NULL;
+    if (replacement_type == fifo)
+        cache->access = &accessFIFO;
+    else if (replacement_type == lru)
+        cache->access = &accessLRU;
+    return cache;
+}
+
+
+/**
+ * Increments in result memory access and hits
+ *
+ * @param access memory access
+ * @param hit whether cache hit
+ * @return hit same value as argument passed in
+ */
+bool increment_access_count(mem_access_t access, bool hit) {
+    switch (access.accesstype) {
+        case instruction:
+            result.instruction_accesses++;
+            if (hit) result.instruction_hits++;
+            break;
+        case data:
+            result.data_accesses++;
+            if (hit) result.data_hits++;
+            break;
+    }
+    return hit;
+}
+
+int main(int argc, char **argv) {
 
     /*
      * Read command-line parameters and initialize:
@@ -157,12 +259,14 @@ int main(int argc, char** argv)
 
     }
     uint32_t *dm_cache;
+    Cache *cache;
     num_blocks = cache_size / block_size;
     num_bits_for_block_offset = log2(block_size);
     if (cache_mapping == dm) {
         num_bits_for_index = log2(num_blocks);
         dm_cache = malloc(sizeof(uint32_t) * num_blocks);
     } else {
+        cache = createCache(num_blocks, cache_replacement);
     }
     num_bits_for_tag = 32 - num_bits_for_block_offset - num_bits_for_index;
 
@@ -195,6 +299,7 @@ int main(int argc, char** argv)
                 dm_cache[index] = tag;
             }
         } else if (cache_mapping == fa) {
+            increment_access_count(access, cache->access(cache, tag));
         }
     }
 
