@@ -156,6 +156,15 @@ int main(int argc, char** argv)
         }
 
     }
+    uint32_t *dm_cache;
+    num_blocks = cache_size / block_size;
+    num_bits_for_block_offset = log2(block_size);
+    if (cache_mapping == dm) {
+        num_bits_for_index = log2(num_blocks);
+        dm_cache = malloc(sizeof(uint32_t) * num_blocks);
+    } else {
+    }
+    num_bits_for_tag = 32 - num_bits_for_block_offset - num_bits_for_index;
 
 
     /* Open the file mem_trace.txt to read memory accesses */
@@ -179,7 +188,14 @@ int main(int argc, char** argv)
         if (access.address == 0)
             break;
         /* Add your code here */
-
+        int tag = access.address >> (32 - num_bits_for_tag);
+        if (cache_mapping == dm) {
+            int index = (access.address >> num_bits_for_block_offset) % (1 << num_bits_for_index);
+            if (!increment_access_count(access, dm_cache[index] == tag)) {
+                dm_cache[index] = tag;
+            }
+        } else if (cache_mapping == fa) {
+        }
     }
 
 
