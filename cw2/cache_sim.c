@@ -118,8 +118,8 @@ result_t result;
 /* rudimentary boolean wrapper */
 typedef enum {
     false, true = !false
-}
-bool;
+} bool;
+
 typedef struct Node {
     int val;
     struct Node *prev;
@@ -137,43 +137,42 @@ typedef struct Cache {
     bool (*access)(struct Cache *, int);
 } Cache;
 
+void pushNode(Cache *cache, int val);
+
 Cache *createCache(int maxBlocks, cache_replacement_t replacement_type);
 
 bool accessFIFO(Cache *self, int tag) {
-    bool hit = false;
-    Node *head;
-    if (self->head != NULL) {
-        head = self->head;
-        while (!(hit = (head->val == tag)))
-            if (head->next != NULL)
-                head = head->next;
-            else break;
+    Node *cur = self->head;
+    while (cur != NULL) {
+        if (cur->val == tag)
+            return true;
+        else cur = cur->next;
     }
-    if (hit) return true;
-    else {
-        Node *node = createNode(tag);
-        if (self->head != NULL) {
-            node->next = self->head;
-            self->head->prev = node;
-        }
-        self->head = node;
-        if (self->filledBlocks >= self->maxBlocks) {
-            Node *prev = self->tail->prev;
-            prev->next = NULL;
-            free(self->tail);
-            self->tail = prev;
-        } else if (self->filledBlocks == 0) {
-            self->tail = node;
-            self->filledBlocks++;
-        } else {
-            self->filledBlocks++;
-        }
-    }
+    pushNode(self, tag);
     return false;
 }
 
 bool accessLRU(Cache *self, int tag) {
-
+    Node *cur = self->head;
+    while (cur != NULL) {
+        if (cur->val == tag) {
+            if (self->head == cur) return true;
+            if (self->tail == cur) {
+                cur->prev->next = NULL;
+                self->tail = cur->prev;
+            } else {
+                cur->prev->next = cur->next;
+                cur->next->prev = cur->prev;
+            }
+            cur->prev = NULL;
+            self->head->prev = cur;
+            cur->next = self->head;
+            self->head = cur;
+            return true;
+        } else cur = cur->next;
+    }
+    pushNode(self, tag);
+    return false;
 }
 
 Node *createNode(int val) {
@@ -182,6 +181,26 @@ Node *createNode(int val) {
     node->prev = NULL;
     node->next = NULL;
     return node;
+}
+
+void pushNode(Cache *cache, int val) {
+    Node *node = createNode(val);
+    if (cache->head != NULL) {
+        node->next = cache->head;
+        cache->head->prev = node;
+    }
+    cache->head = node;
+    if (cache->filledBlocks >= cache->maxBlocks) {
+        Node *prev = cache->tail->prev;
+        prev->next = NULL;
+        free(cache->tail);
+        cache->tail = prev;
+    } else if (cache->filledBlocks == 0) {
+        cache->tail = node;
+        cache->filledBlocks++;
+    } else {
+        cache->filledBlocks++;
+    }
 }
 
 Cache *createCache(int maxBlocks, cache_replacement_t replacement_type) {
@@ -195,6 +214,17 @@ Cache *createCache(int maxBlocks, cache_replacement_t replacement_type) {
     else if (replacement_type == lru)
         cache->access = &accessLRU;
     return cache;
+}
+
+void freeCache(Cache *cache) {
+    Node *cur, *next = NULL;
+    if (cache != NULL)
+        next = cache->head;
+    while ((cur = next) != NULL) {
+        next = cur->next;
+        free(cur);
+    }
+    free(cache);
 }
 
 
@@ -258,8 +288,8 @@ int main(int argc, char **argv) {
         }
 
     }
-    uint32_t *dm_cache;
-    Cache *cache;
+    uint32_t *dm_cache = NULL;
+    Cache *cache = NULL;
     num_blocks = cache_size / block_size;
     num_bits_for_block_offset = log2(block_size);
     if (cache_mapping == dm) {
@@ -302,7 +332,8 @@ int main(int argc, char **argv) {
             increment_access_count(access, cache->access(cache, tag));
         }
     }
-
+    freeCache(cache);
+    free(dm_cache);
 
     /* Do not modify code below */
     /* Make sure that all the parameters are appropriately populated */
