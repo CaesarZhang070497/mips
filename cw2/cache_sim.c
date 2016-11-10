@@ -120,6 +120,7 @@ typedef enum {
     false, true = !false
 } bool;
 
+/* Each Node is a block in FA cache */
 typedef struct Node {
     int val;
     struct Node *prev;
@@ -128,12 +129,14 @@ typedef struct Node {
 
 Node *createNode(int val);
 
+/* Cache implemented as fixed-size doubly linked list */
 typedef struct Cache {
     Node *head;
     Node *tail;
     int filledBlocks;
     int maxBlocks;
 
+    /* access algo is based on replacement strategy */
     bool (*access)(struct Cache *, int);
 } Cache;
 
@@ -141,6 +144,7 @@ void pushNode(Cache *cache, int val);
 
 Cache *createCache(int maxBlocks, cache_replacement_t replacement_type);
 
+/* access function for FIFO replacement strategy */
 bool accessFIFO(Cache *self, int tag) {
     Node *cur = self->head;
     while (cur != NULL) {
@@ -152,6 +156,7 @@ bool accessFIFO(Cache *self, int tag) {
     return false;
 }
 
+/* access function for LRU replacement strategy */
 bool accessLRU(Cache *self, int tag) {
     Node *cur = self->head;
     while (cur != NULL) {
@@ -175,6 +180,7 @@ bool accessLRU(Cache *self, int tag) {
     return false;
 }
 
+/* helper to create and initialize node */
 Node *createNode(int val) {
     Node *node = malloc(sizeof(Node));
     node->val = val;
@@ -183,6 +189,7 @@ Node *createNode(int val) {
     return node;
 }
 
+/* helper to push node, truncates list to max size */
 void pushNode(Cache *cache, int val) {
     Node *node = createNode(val);
     if (cache->head != NULL) {
@@ -203,6 +210,7 @@ void pushNode(Cache *cache, int val) {
     }
 }
 
+/* helper to create and initialize cache */
 Cache *createCache(int maxBlocks, cache_replacement_t replacement_type) {
     Cache *cache = malloc(sizeof(Cache));
     cache->filledBlocks = 0;
@@ -216,6 +224,7 @@ Cache *createCache(int maxBlocks, cache_replacement_t replacement_type) {
     return cache;
 }
 
+/* helper to deallocate memory in LL */
 void freeCache(Cache *cache) {
     Node *cur, *next = NULL;
     if (cache != NULL)
@@ -227,14 +236,7 @@ void freeCache(Cache *cache) {
     free(cache);
 }
 
-
-/**
- * Increments in result memory access and hits
- *
- * @param access memory access
- * @param hit whether cache hit
- * @return hit same value as argument passed in
- */
+/* helper to increment result with accesses & hits */
 bool increment_access_count(mem_access_t access, bool hit) {
     switch (access.accesstype) {
         case instruction:
@@ -288,6 +290,8 @@ int main(int argc, char **argv) {
         }
 
     }
+
+    /* some declaration and initializing, we can populate most global vars here too */
     uint32_t *dm_cache = NULL;
     Cache *cache = NULL;
     num_blocks = cache_size / block_size;
@@ -321,7 +325,6 @@ int main(int argc, char **argv) {
         //If no transactions left, break out of loop
         if (access.address == 0)
             break;
-        /* Add your code here */
         int tag = access.address >> (32 - num_bits_for_tag);
         if (cache_mapping == dm) {
             int index = (access.address >> num_bits_for_block_offset) % (1 << num_bits_for_index);
