@@ -161,6 +161,7 @@ bool accessLRU(Cache *self, int tag) {
     Node *cur = self->head;
     while (cur != NULL) {
         if (cur->val == tag) {
+            /* move to front */
             if (self->head == cur) return true;
             if (self->tail == cur) {
                 cur->prev->next = NULL;
@@ -299,6 +300,7 @@ int main(int argc, char **argv) {
     if (cache_mapping == dm) {
         num_bits_for_index = log2(num_blocks);
         dm_cache = malloc(sizeof(uint32_t) * num_blocks);
+        memset(dm_cache, 0xff, sizeof(uint32_t) * num_blocks); // make all tags in cache invalid
     } else {
         cache = createCache(num_blocks, cache_replacement);
     }
